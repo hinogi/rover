@@ -216,7 +216,7 @@ impl FullyResolvedSubgraph {
         routing_url: Option<String>,
         file: &Utf8PathBuf,
     ) -> Result<FullyResolvedSubgraph, ResolveSubgraphError> {
-        let schema = Fs::read_file(&file).map_err(|err| ResolveSubgraphError::Fs(Box::new(err)))?;
+        let schema = Fs::read_file(file).map_err(|err| ResolveSubgraphError::Fs(Box::new(err)))?;
         let is_fed_two = schema_contains_link_directive(&schema);
         Ok(FullyResolvedSubgraph {
             routing_url: routing_url.clone(),
@@ -228,12 +228,12 @@ impl FullyResolvedSubgraph {
     async fn resolve_subgraph(
         fetch_remote_subgraph_impl: &impl FetchRemoteSubgraph,
         routing_url: Option<String>,
-        graph_ref: &String,
+        graph_ref: &str,
         subgraph: &String,
     ) -> Result<FullyResolvedSubgraph, ResolveSubgraphError> {
         let graph_ref =
             GraphRef::from_str(graph_ref).map_err(|err| ResolveSubgraphError::InvalidGraphRef {
-                graph_ref: graph_ref.clone(),
+                graph_ref: graph_ref.to_owned(),
                 source: Box::new(err),
             })?;
         let remote_subgraph = fetch_remote_subgraph_impl
