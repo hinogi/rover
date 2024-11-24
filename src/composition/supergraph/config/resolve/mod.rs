@@ -259,8 +259,8 @@ impl FullyResolvedSubgraphs {
     }
 
     /// Used to upsert a fully resolved subgraph into this object's definitions
-    pub fn upsert_subgraph(&mut self, name: String, schema: String) {
-        self.subgraphs.insert(name, schema);
+    pub fn upsert_subgraph(&mut self, name: String, schema: String) -> bool {
+        self.subgraphs.insert(name, schema).is_none()
     }
 
     /// Removes a subgraph from this object's definitions
