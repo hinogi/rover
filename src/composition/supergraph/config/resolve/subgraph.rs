@@ -28,6 +28,8 @@ pub enum ResolveSubgraphError {
         supergraph_config_path: Utf8PathBuf,
         /// Supplied path to the subgraph schema file
         path: PathBuf,
+        /// The result of joining the paths together, that caused the failure
+        joined_path: PathBuf,
         /// The source error
         source: std::io::Error,
     },
@@ -97,6 +99,7 @@ impl UnresolvedSubgraph {
                 subgraph_name: self.name.to_string(),
                 supergraph_config_path: root.clone(),
                 path: path.as_std_path().to_path_buf(),
+                joined_path: joined_path.as_std_path().to_path_buf(),
                 source: err,
             }),
         }

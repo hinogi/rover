@@ -299,7 +299,10 @@ impl From<FullyResolvedSubgraphs> for SupergraphConfig {
             (
                 name,
                 SubgraphConfig {
-                    routing_url: None,
+                    // This value is effectively unused but has to be set to something that
+                    // is not "null" when serialised otherwise the supergraph binary
+                    // complains
+                    routing_url: Some(String::from("localhost")),
                     schema: SchemaSource::Sdl { sdl },
                 },
             )
