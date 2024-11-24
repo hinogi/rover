@@ -1,6 +1,9 @@
 //! Provides tooling to resolve subgraphs, fully or lazily
 use std::collections::BTreeMap;
 
+use crate::utils::effect::{
+    fetch_remote_subgraph::FetchRemoteSubgraph, introspect::IntrospectSubgraph,
+};
 use apollo_federation_types::config::{
     FederationVersion, SchemaSource, SubgraphConfig, SupergraphConfig,
 };
@@ -13,10 +16,6 @@ use futures::{
 };
 use itertools::Itertools;
 use thiserror::Error;
-
-use crate::utils::effect::{
-    fetch_remote_subgraph::FetchRemoteSubgraph, introspect::IntrospectSubgraph,
-};
 
 use self::subgraph::{
     FullyResolvedSubgraph, LazilyResolvedSubgraph, ResolveSubgraphError, UnresolvedSubgraph,
@@ -193,6 +192,39 @@ impl LazilyResolvedSupergraphConfig {
             Err(errors)
         }
     }
+
+    /// Fully resolves a [`LazilyResolvedSupergraphConfig`] into a [`FullyResolvedSubgraphs`]
+    /// by retrieving all the schemas as strings
+    pub async fn fully_resolve_subgraphs(
+        self,
+        introspect_subgraph_impl: &impl IntrospectSubgraph,
+        fetch_remote_subgraph_impl: &impl FetchRemoteSubgraph,
+    ) -> Result<FullyResolvedSubgraphs, Vec<ResolveSubgraphError>> {
+        let subgraphs = stream::iter(self.subgraphs.into_iter().map(
+            |(name, lazily_resolved_subgraph)| async {
+                let result = FullyResolvedSubgraph::fully_resolve(
+                    introspect_subgraph_impl,
+                    fetch_remote_subgraph_impl,
+                    lazily_resolved_subgraph,
+                    name.clone(),
+                )
+                .await?;
+                Ok((name, result))
+            },
+        ))
+        .buffer_unordered(50)
+        .collect::<Vec<Result<(String, FullyResolvedSubgraph), ResolveSubgraphError>>>()
+        .await;
+        let (subgraphs, errors): (
+            Vec<(String, FullyResolvedSubgraph)>,
+            Vec<ResolveSubgraphError>,
+        ) = subgraphs.into_iter().partition_result();
+        if errors.is_empty() {
+            Ok(subgraphs.into())
+        } else {
+            Err(errors)
+        }
+    }
 }
 
 impl From<LazilyResolvedSupergraphConfig> for SupergraphConfig {
@@ -276,9 +308,19 @@ impl From<FullyResolvedSubgraphs> for SupergraphConfig {
     }
 }
 
+impl From<Vec<(String, FullyResolvedSubgraph)>> for FullyResolvedSubgraphs {
+    fn from(value: Vec<(String, FullyResolvedSubgraph)>) -> Self {
+        Self {
+            subgraphs: value
+                .into_iter()
+                .map(|(name, frs)| (name, frs.schema().clone()))
+                .collect(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
-
     use std::{
         collections::{BTreeMap, HashSet},
         str::FromStr,
