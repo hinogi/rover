@@ -1,11 +1,11 @@
 {
-  "name": "users",
+  "name": "pandas",
   "version": "1.0.0",
   "description": "",
-  "main": "users.mjs",
+  "main": "pandas.mjs",
   "scripts": {
-    "start": "nodemon -e mjs,graphql",
-    "dev": "cargo rover dev --name users --url http://localhost:4001",
+    "start": "nodemon -e mjs,graphql pandas.mjs",
+    "dev": "cargo rover dev --name pandas --url http://localhost:4003",
     "clean": "rm -rf node_modules package-lock.json"
   },
   "keywords": [],
@@ -17,6 +17,7 @@
     "graphql-tag": "^2"
   },
   "devDependencies": {
+    "concurrently": "9.1.0",
     "nodemon": "3.1.7"
   }
 }

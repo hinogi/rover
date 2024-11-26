@@ -9,11 +9,11 @@ use camino::Utf8PathBuf;
 use futures::stream::{BoxStream, StreamExt};
 
 use crate::{
-    composition::watchers::{
-        subtask::{Subtask, SubtaskRunUnit},
-        watcher::{file::FileWatcher, supergraph_config::SupergraphConfigWatcher},
+    composition::watchers::watcher::{
+        file::FileWatcher, supergraph_config::SupergraphConfigWatcher,
     },
     options::ProfileOpt,
+    subtask::{Subtask, SubtaskRunStream, SubtaskRunUnit},
     utils::{
         client::StudioClientConfig,
         effect::{exec::ExecCommand, read_file::ReadFile, write_file::WriteFile},
@@ -25,15 +25,13 @@ use self::state::SetupSubgraphWatchers;
 use super::{
     events::CompositionEvent,
     supergraph::{
-        binary::SupergraphBinary,
+        binary::{OutputTarget, SupergraphBinary},
         config::resolve::{
             subgraph::LazilyResolvedSubgraph, FullyResolvedSubgraphs,
             LazilyResolvedSupergraphConfig,
         },
     },
-    watchers::{
-        composition::CompositionWatcher, subgraphs::SubgraphWatchers, subtask::SubtaskRunStream,
-    },
+    watchers::{composition::CompositionWatcher, subgraphs::SubgraphWatchers},
 };
 
 mod state;
@@ -110,6 +108,7 @@ impl Runner<state::SetupSupergraphConfigWatcher> {
 
 impl Runner<state::SetupCompositionWatcher> {
     /// Configures the composition watcher
+    #[allow(clippy::too_many_arguments)]
     pub fn setup_composition_watcher<ReadF, ExecC, WriteF>(
         self,
         subgraphs: FullyResolvedSubgraphs,
@@ -117,6 +116,7 @@ impl Runner<state::SetupCompositionWatcher> {
         exec_command: ExecC,
         read_file: ReadF,
         write_file: WriteF,
+        output_target: OutputTarget,
         temp_dir: Utf8PathBuf,
     ) -> Runner<state::Run<ReadF, ExecC, WriteF>>
     where
@@ -131,6 +131,7 @@ impl Runner<state::SetupCompositionWatcher> {
             .exec_command(exec_command)
             .read_file(read_file)
             .write_file(write_file)
+            .output_target(output_target)
             .temp_dir(temp_dir)
             .build();
         Runner {
